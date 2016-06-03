@@ -39,10 +39,14 @@ class LotteryCalculate(object):
 
 
 class Lottery(object):
+    date = "0000"
 
     def __init__(self, reds, blues):
         self.reds = reds
         self.blues = blues
+
+    def set_date(self, date):
+        self.date = date
 
     def get_name_str(self):
         str_red = "-".join(str(i) for i in self.reds)
@@ -51,24 +55,32 @@ class Lottery(object):
 
 
 class LotteryData(Lottery):
-    __default_values = [5000000, 180000, 3000, 200, 10, 5]
-    times = [0, 0, 0, 0, 0, 0]
-    values = [0, 0, 0, 0, 0, 0]
+    # __default_values = [5000000, 180000, 3000, 200, 10, 5]
+
+    def __init__(self, reds, blues):
+        super(LotteryData, Lottery.__init__(self, reds, blues))
+        self.times = [0, 0, 0, 0, 0, 0]
+        # self.values = [0, 0, 0, 0, 0, 0]
+        # self.victory = False
+        # self.lottery = []
 
     def cal_victory(self, lottery):
         methods = [
-            LotteryCalculate.method_1,
-            LotteryCalculate.method_2,
-            LotteryCalculate.method_3,
-            LotteryCalculate.method_4,
-            LotteryCalculate.method_5,
+            # LotteryCalculate.method_1,
+            # LotteryCalculate.method_2,
+            # LotteryCalculate.method_3
+            # LotteryCalculate.method_4
+            # LotteryCalculate.method_5
             LotteryCalculate.method_6
         ]
 
-        for i in range(len(methods)):
+        for i in xrange(len(methods)):
             if methods[i](self, lottery):
                 self.times[i] += 1
-                self.values[i] += self.__default_values[i]
+                # self.values[i] += self.__default_values[i]
+                # self.lottery.append(lottery)
+                # self.victory = True
+                break
 
 
 class FetchHTML(object):
@@ -76,7 +88,7 @@ class FetchHTML(object):
     url = "http://kaijiang.zhcw.com/zhcw/html/ssq/list_%d.html"
 
     def fetch_html(self, pages):
-        for i in range(pages):
+        for i in xrange(pages):
             self.write_one_page(i + 1, self.fetch_one_page(i + 1))
 
     def fetch_one_page(self, page):
@@ -92,16 +104,28 @@ class FetchHTML(object):
         print "finished page %d" % page
 
 
-class CreateLottery():
+class GetLottery():
+    path = "lottery.pkl"
     lotteries = []
 
     def __init__(self, pages):
         self.pages = pages
 
-    def create(self):
-        for i in range(self.pages):
+    def get(self):
+        import pickle
+        for i in xrange(self.pages):
             self.parse_page(self.load_one_page(i + 1))
-        return self.lotteries
+        with open(self.path, "wb") as file:
+            pickle.dump(self.lotteries, file)
+            file.close()
+
+    @staticmethod
+    def load():
+        import pickle
+        with open(GetLottery.path, "rb") as file:
+            lotteries = pickle.load(file)
+            file.close()
+        return lotteries
 
     def load_one_page(self, page):
         name = "data/page" + str(page) + ".html"
@@ -115,10 +139,12 @@ class CreateLottery():
             r'<em class="rr">.*</em>')
         p_blues = re.compile(
             r'<em>.*</em>')
+        p_date = re.compile(r'<td align="center">\d+</td>')
         p_num = re.compile(r'\d+')
         reds = p_reds.findall(text)
         blues = p_blues.findall(text)
-        for i in range(len(blues)):
+        dates = p_date.findall(text)
+        for i in xrange(len(blues)):
             lottery = Lottery([
                 int(p_num.findall(reds[i * 6])[0]),
                 int(p_num.findall(reds[i * 6 + 1])[0]),
@@ -128,7 +154,41 @@ class CreateLottery():
                 int(p_num.findall(reds[i * 6 + 5])[0])
             ],
                 [int(p_num.findall(blues[i])[0])])
+            lottery.set_date(p_num.findall(dates[i])[0])
             self.lotteries.append(lottery)
 
+
+def cal(lotterydata, lottery):
+    for item in lottery:
+        lotterydata.cal_victory(item)
+
+
+def generate():
+    lottery = GetLottery.load()
+    red_num = 33
+    blue_num = 16
+    for a in xrange(red_num):
+        for b in xrange(a + 1, red_num, 1):
+            for c in xrange(b + 1, red_num, 1):
+                for d in xrange(c + 1, red_num, 1):
+                    for e in xrange(d + 1, red_num, 1):
+                        for f in xrange(e + 1, red_num, 1):
+                            for g in xrange(blue_num):
+                                lotterydata = LotteryData(
+                                    [a + 1, b + 1, c + 1, d + 1, e + 1, f + 1], [g + 1])
+                                cal(lotterydata, lottery)
+                                yield lotterydata
+
+
+def main():
+    data = generate()
+    min_num = 999
+    for i in data:
+        if i.times[0] <= min_num:
+            min_num = i.times[0]
+            print i.get_name_str(), min_num
+    print "done."
+
 if __name__ == "__main__":
-    win_lotteries = CreateLottery(99).create()
+    # GetLottery(99).get()
+    main()
