@@ -203,15 +203,34 @@ def thread_set_max(num):
     lock.release()
 
 
+def thread_set_min_times(num):
+    global min_times
+    lock.acquire()
+    min_times = num
+    lock.release()
+
+
+def thread_set_max_times(num):
+    global max_times
+    lock.acquire()
+    max_times = num
+    lock.release()
+
+
 def main_thread(data, num):
-    print "start %d" % num
     for i in data:
         if i.values <= min_num:
             thread_set_min(i.values)
-            thread_print((i.get_name_str(), min_num, "at %d min" % num))
+            thread_print((i.get_name_str(), min_num, "at %d min value" % num))
         if i.values >= max_num:
             thread_set_max(i.values)
-            thread_print((i.get_name_str(), max_num, "at %d max" % num))
+            thread_print((i.get_name_str(), max_num, "at %d max value" % num))
+        if sum(i.times) <= min_times:
+            thread_set_min_times(sum(i.times))
+            thread_print((i.get_name_str(), sum(i.times), "at %d min times" % num))
+        if sum(i.times) >= max_times:
+            thread_set_max_times(sum(i.times))
+            thread_print((i.get_name_str(), sum(i.times), "at %d max times" % num))
     thread_print("done %d." % num)
 
 
@@ -239,8 +258,10 @@ if __name__ == "__main__":
     global lock
     min_num = sys.maxint
     max_num = 0
+    min_times = sys.maxint
+    max_times = 0
     lock = threading.Lock()
     main()
     main_thread(generate_thread(0, 1), 0)
     # main_s()
-    # print_s([23, 24, 25, 26, 27, 28], [6])
+    # print_s([15, 16, 17, 18, 19, 21], [14])
