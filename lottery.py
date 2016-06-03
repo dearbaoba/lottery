@@ -1,4 +1,5 @@
 # -*- coding: UTF-8 -*-
+import threading
 
 
 class LotteryCalculate(object):
@@ -55,13 +56,10 @@ class Lottery(object):
 
 
 class LotteryData(Lottery):
-    # __default_values = [5000000, 180000, 3000, 200, 10, 5]
 
     def __init__(self, reds, blues):
         super(LotteryData, Lottery.__init__(self, reds, blues))
         self.times = [0, 0, 0, 0, 0, 0]
-        # self.values = [0, 0, 0, 0, 0, 0]
-        # self.victory = False
         # self.lottery = []
 
     def cal_victory(self, lottery):
@@ -77,9 +75,7 @@ class LotteryData(Lottery):
         for i in xrange(len(methods)):
             if methods[i](self, lottery):
                 self.times[i] += 1
-                # self.values[i] += self.__default_values[i]
                 # self.lottery.append(lottery)
-                # self.victory = True
                 break
 
 
@@ -163,11 +159,11 @@ def cal(lotterydata, lottery):
         lotterydata.cal_victory(item)
 
 
-def generate():
+def generate_thread(start, end):
     lottery = GetLottery.load()
     red_num = 33
     blue_num = 16
-    for a in xrange(red_num):
+    for a in xrange(start, end, 1):
         for b in xrange(a + 1, red_num, 1):
             for c in xrange(b + 1, red_num, 1):
                 for d in xrange(c + 1, red_num, 1):
@@ -180,15 +176,48 @@ def generate():
                                 yield lotterydata
 
 
-def main():
-    data = generate()
-    min_num = 999
+def generate():
+    return generate_thread(0, 33)
+
+
+def thread_print(arg):
+    lock.acquire()
+    print arg
+    lock.release()
+
+
+def thread_set_min(num):
+    global min_num
+    lock.acquire()
+    min_num = num
+    lock.release()
+
+
+def main_thread(data, num):
+    print "start %d" % num
     for i in data:
         if i.times[0] <= min_num:
-            min_num = i.times[0]
-            print i.get_name_str(), min_num
-    print "done."
+            thread_set_min(i.times[0])
+            thread_print((i.get_name_str(), min_num, "at %d" % num))
+    thread_print("done %d." % num)
+
+
+def main():
+    for i in xrange(1, 33, 1):
+        t = threading.Thread(target=main_thread, args=(generate_thread(i, i + 1), i + 1))
+        t.setDaemon(True)
+        t.start()
+
+
+def main_s():
+    data = generate()
+    main_thread(data, 0)
 
 if __name__ == "__main__":
     # GetLottery(99).get()
+    global lock
+    min_num = 999
+    lock = threading.Lock()
     main()
+    main_thread(generate_thread(0, 1), 0)
+    # main_s()
