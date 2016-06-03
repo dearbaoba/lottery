@@ -196,12 +196,22 @@ def thread_set_min(num):
     lock.release()
 
 
+def thread_set_max(num):
+    global max_num
+    lock.acquire()
+    max_num = num
+    lock.release()
+
+
 def main_thread(data, num):
     print "start %d" % num
     for i in data:
         if i.values <= min_num:
             thread_set_min(i.values)
-            thread_print((i.get_name_str(), min_num, "at %d" % num))
+            thread_print((i.get_name_str(), min_num, "at %d min" % num))
+        if i.values >= max_num:
+            thread_set_max(i.values)
+            thread_print((i.get_name_str(), max_num, "at %d max" % num))
     thread_print("done %d." % num)
 
 
@@ -228,9 +238,9 @@ if __name__ == "__main__":
     # GetLottery(99).get()
     global lock
     min_num = sys.maxint
-    print min_num
+    max_num = 0
     lock = threading.Lock()
     main()
     main_thread(generate_thread(0, 1), 0)
     # main_s()
-    # print_s([16, 17, 18, 22, 26, 27], [4])
+    # print_s([23, 24, 25, 26, 27, 28], [6])
