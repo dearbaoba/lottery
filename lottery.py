@@ -56,25 +56,28 @@ class Lottery(object):
 
 
 class LotteryData(Lottery):
+    __default_value = [1339650, 83728, 8269, 171, 9, 1]
 
     def __init__(self, reds, blues):
         super(LotteryData, Lottery.__init__(self, reds, blues))
         self.times = [0, 0, 0, 0, 0, 0]
+        self.values = 0
         # self.lottery = []
 
     def cal_victory(self, lottery):
         methods = [
-            # LotteryCalculate.method_1,
-            # LotteryCalculate.method_2,
-            # LotteryCalculate.method_3
-            # LotteryCalculate.method_4
-            # LotteryCalculate.method_5
+            LotteryCalculate.method_1,
+            LotteryCalculate.method_2,
+            LotteryCalculate.method_3,
+            LotteryCalculate.method_4,
+            LotteryCalculate.method_5,
             LotteryCalculate.method_6
         ]
 
         for i in xrange(len(methods)):
             if methods[i](self, lottery):
                 self.times[i] += 1
+                self.values += self.__default_value[i]
                 # self.lottery.append(lottery)
                 break
 
@@ -196,8 +199,8 @@ def thread_set_min(num):
 def main_thread(data, num):
     print "start %d" % num
     for i in data:
-        if i.times[0] <= min_num:
-            thread_set_min(i.times[0])
+        if i.values <= min_num:
+            thread_set_min(i.values)
             thread_print((i.get_name_str(), min_num, "at %d" % num))
     thread_print("done %d." % num)
 
@@ -213,11 +216,21 @@ def main_s():
     data = generate()
     main_thread(data, 0)
 
+
+def print_s(reds, blues):
+    item = LotteryData(reds, blues)
+    lottery = GetLottery.load()
+    cal(item, lottery)
+    print item.times
+
 if __name__ == "__main__":
+    import sys
     # GetLottery(99).get()
     global lock
-    min_num = 999
+    min_num = sys.maxint
+    print min_num
     lock = threading.Lock()
     main()
     main_thread(generate_thread(0, 1), 0)
     # main_s()
+    # print_s([16, 17, 18, 22, 26, 27], [4])
