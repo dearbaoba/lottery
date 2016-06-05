@@ -8,12 +8,12 @@ BLUE_TOTAL = 16
 BLUE_LIST = [i + 1 for i in xrange(BLUE_TOTAL)]
 METHOD_NUM = 6
 METHODS = [
-    [(6, 1)],
-    [(6, 0)],
-    [(5, 1)],
-    [(5, 0), (4, 1)],
+    [(2, 1), (1, 1), (0, 1)],
     [(4, 0), (3, 1)],
-    [(2, 1), (1, 1), (0, 1)]
+    [(5, 0), (4, 1)],
+    [(5, 1)],
+    [(6, 0)],
+    [(6, 1)]
 ]
 MAX_COMB = 17721088
 
@@ -22,8 +22,8 @@ class LotteryCalculate(object):
 
     @staticmethod
     def __method(red, blue, lottery_data, lottery):
-        reds = list(set(lottery.reds) & set(lottery_data.reds))
-        blues = list(set(lottery.blues) & set(lottery_data.blues))
+        reds = set(lottery.reds) & set(lottery_data.reds)
+        blues = set(lottery.blues) & set(lottery_data.blues)
         return len(reds) == red and len(blues) == blue
 
     @staticmethod
@@ -49,7 +49,7 @@ class Lottery(object):
 
 
 class LotteryData(Lottery):
-    __default_value = [1339650, 83728, 8269, 171, 9, 1]
+    __default_value = [1, 9, 171, 8269, 83728, 1339650]
 
     def __init__(self, reds, blues):
         super(LotteryData, Lottery.__init__(self, reds, blues))
