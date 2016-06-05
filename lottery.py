@@ -160,10 +160,21 @@ def inc_percent():
     lock.release()
 
 
+def percent_max():
+    from itertools import combinations, product
+
+    reds = combinations([i + 1 for i in xrange(33)], 6)
+    blues = [i + 1 for i in xrange(16)]
+    group = product(reds, blues)
+    num = 0
+    for i in group:
+        num += 1
+    return num
+
+
 def percent():
     __per = 100
-    __max = float(17721088)
-    per = int(float(percent_num) / __max * __per) + 1
+    per = int(float(percent_num) / float(MAX_COMB) * __per) + 1
     if per > __per:
         per = __per
     string = ""
@@ -171,8 +182,8 @@ def percent():
         string += "="
     for i in xrange(__per - per):
         string += "-"
-    print("[" + string + " " + str(per) + "/" + str(__per) + "]")
-    return percent_num >= __max
+    print("[" + string + " " + str(percent_num) + "/" + str(MAX_COMB) + "]")
+    return percent_num >= MAX_COMB
 
 
 def main_run(data, tID, lotteries):
@@ -229,6 +240,8 @@ if __name__ == "__main__":
     import threading
     global lock
     lock = threading.Lock()
+    global MAX_COMB
+    MAX_COMB = percent_max()
 
     min_times = sys.maxint
     max_times = 0
