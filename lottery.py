@@ -15,6 +15,7 @@ METHODS = [
     [(4, 0), (3, 1)],
     [(2, 1), (1, 1), (0, 1)]
 ]
+MAX_COMB = 17721088
 
 
 class LotteryCalculate(object):
@@ -160,18 +161,6 @@ def inc_percent():
     lock.release()
 
 
-def percent_max():
-    from itertools import combinations, product
-
-    reds = combinations([i + 1 for i in xrange(33)], 6)
-    blues = [i + 1 for i in xrange(16)]
-    group = product(reds, blues)
-    num = 0
-    for i in group:
-        num += 1
-    return num
-
-
 def percent():
     __per = 100
     per = int(float(percent_num) / float(MAX_COMB) * __per) + 1
@@ -240,8 +229,6 @@ if __name__ == "__main__":
     import threading
     global lock
     lock = threading.Lock()
-    global MAX_COMB
-    MAX_COMB = percent_max()
 
     min_times = sys.maxint
     max_times = 0
