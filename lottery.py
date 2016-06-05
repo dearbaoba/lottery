@@ -161,7 +161,7 @@ def inc_percent():
 
 
 def percent():
-    __per = 20
+    __per = 100
     __max = float(17721088)
     per = int(float(percent_num) / __max * __per) + 1
     if per > __per:
@@ -171,7 +171,8 @@ def percent():
         string += "="
     for i in xrange(__per - per):
         string += "-"
-    print("[" + string + "]")
+    print("[" + string + " " + str(per) + "/" + str(__per) + "]")
+    return percent_num >= __max
 
 
 def main_run(data, tID, lotteries):
@@ -198,8 +199,8 @@ def main_run(data, tID, lotteries):
         if sum(i.times) >= max_times:
             max_times = sum(i.times)
             print((i.get_name_str(), i.times, sum(i.times), "max times"))
-        # if index >= 9:
-        #     break
+        if index >= 99:
+            break
     end_time = time.time()
     print("thread %d done. %f" % (tID, (end_time - start_time)))
 
@@ -236,10 +237,9 @@ if __name__ == "__main__":
     percent_num = 0
 
     lotteries = GetLottery.get(99)
-    main_thread(28, lotteries)
+    main_thread(1, lotteries)
 
     # print_s([15, 16, 17, 18, 19, 21], [14])
 
-    while 1:
-        percent()
+    while not percent():
         time.sleep(1)
