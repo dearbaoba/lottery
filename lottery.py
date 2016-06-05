@@ -210,8 +210,8 @@ def main_run(data, tID, lotteries):
         if sum(i.times) >= max_times:
             max_times = sum(i.times)
             print((i.get_name_str(), i.times, sum(i.times), "max times"))
-        if index >= 99:
-            break
+        # if index >= 99:
+        #     break
     end_time = time.time()
     print("thread %d done. %f" % (tID, (end_time - start_time)))
 
