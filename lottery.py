@@ -1,5 +1,20 @@
 # -*- coding: UTF-8 -*-
-import threading
+
+RED_NUM = 6
+RED_TOTAL = 33
+RED_LIST = [i + 1 for i in xrange(RED_TOTAL)]
+BLUE_NUM = 1
+BLUE_TOTAL = 16
+BLUE_LIST = [i + 1 for i in xrange(BLUE_TOTAL)]
+METHOD_NUM = 6
+METHODS = [
+    [(6, 1)],
+    [(6, 0)],
+    [(5, 1)],
+    [(5, 0), (4, 1)],
+    [(4, 0), (3, 1)],
+    [(2, 1), (1, 1), (0, 1)]
+]
 
 
 class LotteryCalculate(object):
@@ -11,36 +26,13 @@ class LotteryCalculate(object):
         return len(reds) == red and len(blues) == blue
 
     @staticmethod
-    def method_1(lottery_data, lottery):
-        return LotteryCalculate.__method(6, 1, lottery_data, lottery)
-
-    @staticmethod
-    def method_2(lottery_data, lottery):
-        return LotteryCalculate.__method(6, 0, lottery_data, lottery)
-
-    @staticmethod
-    def method_3(lottery_data, lottery):
-        return LotteryCalculate.__method(5, 1, lottery_data, lottery)
-
-    @staticmethod
-    def method_4(lottery_data, lottery):
-        return LotteryCalculate.__method(5, 0, lottery_data, lottery) \
-            or LotteryCalculate.__method(4, 1, lottery_data, lottery)
-
-    @staticmethod
-    def method_5(lottery_data, lottery):
-        return LotteryCalculate.__method(4, 0, lottery_data, lottery) \
-            or LotteryCalculate.__method(3, 1, lottery_data, lottery)
-
-    @staticmethod
-    def method_6(lottery_data, lottery):
-        return LotteryCalculate.__method(2, 1, lottery_data, lottery) \
-            or LotteryCalculate.__method(1, 1, lottery_data, lottery) \
-            or LotteryCalculate.__method(0, 1, lottery_data, lottery)
+    def method_generate(lottery_data, lottery):
+        for method in METHODS:
+            yield reduce(lambda x, y: x or y, [LotteryCalculate.__method(
+                item[0], item[1], lottery_data, lottery) for item in method])
 
 
 class Lottery(object):
-    date = "0000"
 
     def __init__(self, reds, blues):
         self.reds = reds
@@ -61,25 +53,20 @@ class LotteryData(Lottery):
     def __init__(self, reds, blues):
         super(LotteryData, Lottery.__init__(self, reds, blues))
         self.times = [0, 0, 0, 0, 0, 0]
-        self.values = 0
+        self.value = 0
         # self.lottery = []
 
     def cal_victory(self, lottery):
-        methods = [
-            LotteryCalculate.method_1,
-            LotteryCalculate.method_2,
-            LotteryCalculate.method_3,
-            LotteryCalculate.method_4,
-            LotteryCalculate.method_5,
-            LotteryCalculate.method_6
-        ]
-
-        for i in xrange(len(methods)):
-            if methods[i](self, lottery):
+        methods = LotteryCalculate.method_generate(self, lottery)
+        for i, method in enumerate(methods):
+            if method:
                 self.times[i] += 1
-                self.values += self.__default_value[i]
+                self.value += self.__default_value[i]
                 # self.lottery.append(lottery)
                 break
+
+    def cal(self, lotteries):
+        map(self.cal_victory, [item for item in lotteries])
 
 
 class FetchHTML(object):
@@ -138,130 +125,68 @@ class GetLottery():
             r'<em class="rr">.*</em>')
         p_blues = re.compile(
             r'<em>.*</em>')
-        p_date = re.compile(r'<td align="center">\d+</td>')
+        p_date = re.compile(r'<td align="center">\d+-\d+-\d+</td>')
         p_num = re.compile(r'\d+')
-        reds = p_reds.findall(text)
-        blues = p_blues.findall(text)
-        dates = p_date.findall(text)
-        for i in xrange(len(blues)):
-            lottery = Lottery([
-                int(p_num.findall(reds[i * 6])[0]),
-                int(p_num.findall(reds[i * 6 + 1])[0]),
-                int(p_num.findall(reds[i * 6 + 2])[0]),
-                int(p_num.findall(reds[i * 6 + 3])[0]),
-                int(p_num.findall(reds[i * 6 + 4])[0]),
-                int(p_num.findall(reds[i * 6 + 5])[0])
-            ],
-                [int(p_num.findall(blues[i])[0])])
-            lottery.set_date(p_num.findall(dates[i])[0])
+        p_date_str = re.compile(r'\d+-\d+-\d+')
+        reds = p_reds.finditer(text)
+        blues = p_blues.finditer(text)
+        dates = p_date.finditer(text)
+        for date in dates:
+            red_list = [int(p_num.search(reds.next().group()).group())
+                        for i in xrange(RED_NUM)]
+            blue_list = [int(p_num.search(blues.next().group()).group())
+                         for i in xrange(BLUE_NUM)]
+            lottery = Lottery(red_list, blue_list)
+            lottery.set_date(p_date_str.search(date.group()).group())
             self.lotteries.append(lottery)
 
 
-def cal(lotterydata, lottery):
-    for item in lottery:
-        lotterydata.cal_victory(item)
+def generate_data():
+    from itertools import combinations, product
+    lotteries = GetLottery.load()
+    reds = combinations(RED_LIST, RED_NUM)
+    blues = combinations(BLUE_LIST, BLUE_NUM)
+    reds_blues = product(reds, blues)
+    for item in reds_blues:
+        lotterydata = LotteryData(item[0], item[1])
+        lotterydata.cal(lotteries)
+        yield lotterydata
 
 
-def generate_thread(start, end):
-    lottery = GetLottery.load()
-    red_num = 33
-    blue_num = 16
-    for a in xrange(start, end, 1):
-        for b in xrange(a + 1, red_num, 1):
-            for c in xrange(b + 1, red_num, 1):
-                for d in xrange(c + 1, red_num, 1):
-                    for e in xrange(d + 1, red_num, 1):
-                        for f in xrange(e + 1, red_num, 1):
-                            for g in xrange(blue_num):
-                                lotterydata = LotteryData(
-                                    [a + 1, b + 1, c + 1, d + 1, e + 1, f + 1], [g + 1])
-                                cal(lotterydata, lottery)
-                                yield lotterydata
-
-
-def generate():
-    return generate_thread(0, 33)
-
-
-def thread_print(arg):
-    lock.acquire()
-    print arg
-    lock.release()
-
-
-def thread_set_min(num):
-    global min_num
-    lock.acquire()
-    min_num = num
-    lock.release()
-
-
-def thread_set_max(num):
-    global max_num
-    lock.acquire()
-    max_num = num
-    lock.release()
-
-
-def thread_set_min_times(num):
-    global min_times
-    lock.acquire()
-    min_times = num
-    lock.release()
-
-
-def thread_set_max_times(num):
-    global max_times
-    lock.acquire()
-    max_times = num
-    lock.release()
-
-
-def main_thread(data, num):
+def main_run(data):
+    import sys
+    min_times = sys.maxint
+    max_times = 0
+    min_value = sys.maxint
+    max_value = 0
     for i in data:
-        if i.values <= min_num:
-            thread_set_min(i.values)
-            thread_print((i.get_name_str(), min_num, "at %d min value" % num))
-        if i.values >= max_num:
-            thread_set_max(i.values)
-            thread_print((i.get_name_str(), max_num, "at %d max value" % num))
+        if i.value <= min_value:
+            min_value = i.value
+            print((i.get_name_str(), min_value, " min value"))
+        if i.value >= max_value:
+            max_value = i.value
+            print((i.get_name_str(), max_value, "max value"))
         if sum(i.times) <= min_times:
-            thread_set_min_times(sum(i.times))
-            thread_print((i.get_name_str(), sum(i.times), "at %d min times" % num))
+            min_times = sum(i.times)
+            print((i.get_name_str(), sum(i.times), "min times"))
         if sum(i.times) >= max_times:
-            thread_set_max_times(sum(i.times))
-            thread_print((i.get_name_str(), sum(i.times), "at %d max times" % num))
-    thread_print("done %d." % num)
+            max_times = sum(i.times)
+            print((i.get_name_str(), sum(i.times), "max times"))
+    print("done.")
 
 
 def main():
-    for i in xrange(1, 33, 1):
-        t = threading.Thread(target=main_thread, args=(generate_thread(i, i + 1), i + 1))
-        t.setDaemon(True)
-        t.start()
-
-
-def main_s():
-    data = generate()
-    main_thread(data, 0)
+    data = generate_data()
+    main_run(data)
 
 
 def print_s(reds, blues):
-    item = LotteryData(reds, blues)
-    lottery = GetLottery.load()
-    cal(item, lottery)
-    print item.times
+    lotteries = GetLottery.load()
+    lotterydata = LotteryData(reds, blues)
+    lotterydata.cal(lotteries)
+    print(lotterydata.times)
 
 if __name__ == "__main__":
-    import sys
     # GetLottery(99).get()
-    global lock
-    min_num = sys.maxint
-    max_num = 0
-    min_times = sys.maxint
-    max_times = 0
-    lock = threading.Lock()
     main()
-    main_thread(generate_thread(0, 1), 0)
-    # main_s()
     # print_s([15, 16, 17, 18, 19, 21], [14])
