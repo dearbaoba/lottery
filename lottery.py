@@ -141,25 +141,39 @@ class GetLottery():
             self.lotteries.append(lottery)
 
 
-def generate_data():
+def generate_data_comb(start):
+    from itertools import combinations
+    RED_LIST_T = [i + 1 for i in xrange(start - 1, RED_TOTAL, 1)]
+    return combinations(RED_LIST_T, RED_NUM - 1)
+
+
+def generate_data(threads, index):
     from itertools import combinations, product
+    import math
     lotteries = GetLottery.load()
-    reds = combinations(RED_LIST, RED_NUM)
-    blues = combinations(BLUE_LIST, BLUE_NUM)
-    reds_blues = product(reds, blues)
-    for item in reds_blues:
-        lotterydata = LotteryData(item[0], item[1])
-        lotterydata.cal(lotteries)
-        yield lotterydata
+    num = math.ceil(RED_TOTAL / threads)
+    start = int(index * num)
+    end = int(min((index + 1) * num, RED_TOTAL))
+    num_list = [i + 1 for i in xrange(start, end, 1)]
+    for num in num_list:
+        reds = generate_data_comb(num + 1)
+        blues = combinations(BLUE_LIST, BLUE_NUM)
+        reds_blues = product([num], reds, blues)
+        for item in reds_blues:
+            lotterydata = LotteryData((item[0], ) + item[1], item[2])
+            lotterydata.cal(lotteries)
+            yield lotterydata
 
 
-def main_run(data):
-    import sys
-    min_times = sys.maxint
-    max_times = 0
-    min_value = sys.maxint
-    max_value = 0
-    for i in data:
+def main_run(data, index):
+    import time
+    global min_times
+    global max_times
+    global min_value
+    global max_value
+
+    start_time = time.time()
+    for index, i in enumerate(data):
         if i.value <= min_value:
             min_value = i.value
             print((i.get_name_str(), i.times, min_value, " min value"))
@@ -172,12 +186,23 @@ def main_run(data):
         if sum(i.times) >= max_times:
             max_times = sum(i.times)
             print((i.get_name_str(), i.times, sum(i.times), "max times"))
-    print("done.")
+        # if index > 100:
+        #     break
+    end_time = time.time()
+    print("thread %d done. %f" % (index, (end_time - start_time)))
 
 
-def main():
-    data = generate_data()
-    main_run(data)
+def main(threads=1, index=0):
+    main_run(generate_data(threads, index), index)
+
+
+def main_thread(n):
+    import threading
+    for i in xrange(n):
+        t = threading.Thread(target=main, args=(n, i + 1))
+        t.setDaemon(True)
+        t.start()
+    main(n, 0)
 
 
 def print_s(reds, blues):
@@ -187,6 +212,15 @@ def print_s(reds, blues):
     print(lotterydata.times)
 
 if __name__ == "__main__":
+    import sys
+
+    min_times = sys.maxint
+    max_times = 0
+    min_value = sys.maxint
+    max_value = 0
+
     # GetLottery(99).get()
-    main()
+    # main()
+    main_thread(28)
+
     # print_s([15, 16, 17, 18, 19, 21], [14])
