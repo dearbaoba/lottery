@@ -21,16 +21,29 @@ MAX_COMB = 17721088
 class LotteryCalculate(object):
 
     @staticmethod
+    def find(reds1, reds2):
+        match = 0
+        for a in reds1:
+            for b in reds2:
+                if a is b:
+                    match += 1
+                    break
+        return match
+
+    @staticmethod
     def __method(red, blue, lottery_data, lottery):
-        reds = set(lottery.reds) & set(lottery_data.reds)
-        blues = set(lottery.blues) & set(lottery_data.blues)
-        return len(reds) == red and len(blues) == blue
+        return LotteryCalculate.find(lottery.reds, lottery_data.reds) is red \
+            and LotteryCalculate.find(lottery.blues,
+                                      lottery_data.blues) is blue
 
     @staticmethod
     def method_generate(lottery_data, lottery):
-        for method in METHODS:
-            yield reduce(lambda x, y: x or y, [LotteryCalculate.__method(
-                item[0], item[1], lottery_data, lottery) for item in method])
+        for i, method in enumerate(METHODS):
+            for item in method:
+                if LotteryCalculate.__method(
+                        item[0], item[1], lottery_data, lottery):
+                    return True, i
+        return False, 0
 
 
 class Lottery(object):
@@ -58,13 +71,11 @@ class LotteryData(Lottery):
         # self.lottery = []
 
     def cal_victory(self, lottery):
-        methods = LotteryCalculate.method_generate(self, lottery)
-        for i, method in enumerate(methods):
-            if method:
-                self.times[i] += 1
-                self.value += self.__default_value[i]
-                # self.lottery.append(lottery)
-                break
+        methods, i = LotteryCalculate.method_generate(self, lottery)
+        if methods:
+            self.times[i] += 1
+            self.value += self.__default_value[i]
+            # self.lottery.append(lottery)
 
     def cal(self, lotteries):
         map(self.cal_victory, [item for item in lotteries])
