@@ -162,16 +162,16 @@ def main_run(data):
     for i in data:
         if i.value <= min_value:
             min_value = i.value
-            print((i.get_name_str(), min_value, " min value"))
+            print((i.get_name_str(), i.times, min_value, " min value"))
         if i.value >= max_value:
             max_value = i.value
-            print((i.get_name_str(), max_value, "max value"))
+            print((i.get_name_str(), i.times, max_value, "max value"))
         if sum(i.times) <= min_times:
             min_times = sum(i.times)
-            print((i.get_name_str(), sum(i.times), "min times"))
+            print((i.get_name_str(), i.times, sum(i.times), "min times"))
         if sum(i.times) >= max_times:
             max_times = sum(i.times)
-            print((i.get_name_str(), sum(i.times), "max times"))
+            print((i.get_name_str(), i.times, sum(i.times), "max times"))
     print("done.")
 
 
