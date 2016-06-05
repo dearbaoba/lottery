@@ -52,7 +52,7 @@ class LotteryData(Lottery):
 
     def __init__(self, reds, blues):
         super(LotteryData, Lottery.__init__(self, reds, blues))
-        self.times = [0, 0, 0, 0, 0, 0]
+        self.times = [0 for i in xrange(METHOD_NUM)]
         self.value = 0
         # self.lottery = []
 
