@@ -153,6 +153,27 @@ def generate_data(threads, index):
             yield LotteryData((item[0], ) + item[1], item[2])
 
 
+def inc_percent():
+    global percent_num
+    lock.acquire()
+    percent_num += 1
+    lock.release()
+
+
+def percent():
+    __per = 20
+    __max = float(17721088)
+    per = int(float(percent_num) / __max * __per) + 1
+    if per > __per:
+        per = __per
+    string = ""
+    for i in xrange(per):
+        string += "="
+    for i in xrange(__per - per):
+        string += "-"
+    print("[" + string + "]")
+
+
 def main_run(data, tID, lotteries):
     import time
 
@@ -163,6 +184,7 @@ def main_run(data, tID, lotteries):
 
     start_time = time.time()
     for index, i in enumerate(data):
+        inc_percent()
         i.cal(lotteries)
         if i.value <= min_value:
             min_value = i.value
@@ -188,11 +210,10 @@ def main(threads, index, lotteries):
 
 def main_thread(n, lotteries):
     import threading
-    for i in xrange(n - 1):
-        t = threading.Thread(target=main, args=(n, i + 1, lotteries))
+    for i in xrange(n):
+        t = threading.Thread(target=main, args=(n, i, lotteries))
         t.setDaemon(True)
         t.start()
-    main(n, 0, lotteries)
 
 
 def print_s(reds, blues):
@@ -203,14 +224,22 @@ def print_s(reds, blues):
 
 if __name__ == "__main__":
     import sys
+    import time
+    import threading
+    global lock
+    lock = threading.Lock()
 
     min_times = sys.maxint
     max_times = 0
     min_value = sys.maxint
     max_value = 0
+    percent_num = 0
 
     lotteries = GetLottery.get(99)
-    main(1, 0, lotteries)
-    # main_thread(28, lotteries)
+    main_thread(28, lotteries)
 
     # print_s([15, 16, 17, 18, 19, 21], [14])
+
+    while 1:
+        percent()
+        time.sleep(1)
