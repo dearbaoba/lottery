@@ -28,10 +28,11 @@ class LotteryCalculate(object):
 
     @staticmethod
     def method_generate(lottery_data, lottery):
-        for method in METHODS:
-            yield reduce(lambda x, y: x or y,
-                         [LotteryCalculate.__method(item[0], item[1], lottery_data, lottery)
-                          for item in method])
+        for i, method in enumerate(METHODS):
+            for item in method:
+                if LotteryCalculate.__method(item[0], item[1], lottery_data, lottery):
+                    return True, i
+        return False, 0
 
 
 class Lottery(object):
@@ -50,7 +51,7 @@ class Lottery(object):
 
 
 class LotteryData(Lottery):
-    __default_value = [1, 9, 171, 8269, 83728, 1339650]
+    __default_value = [17, 124, 2255, 109389, 1107568, 17721088]
 
     def __init__(self, reds, blues):
         super(LotteryData, Lottery.__init__(self, reds, blues))
@@ -64,13 +65,12 @@ class LotteryData(Lottery):
             self.value += self.__default_value[i]
             # self.lottery.append(lottery)
 
-        methods = LotteryCalculate.method_generate(self, lottery)
-        map(lambda x: __set_self(x[0]),
-            filter(lambda x: x[1],
-                   [(i, method) for i, method in enumerate(methods)]))
+        methods, index = LotteryCalculate.method_generate(self, lottery)
+        if methods:
+            __set_self(index)
 
     def cal(self, lotteries):
-        map(self.cal_victory, [item for item in lotteries])
+        map(self.cal_victory, iter(item for item in lotteries))
 
 
 class FetchHTML(object):
@@ -99,8 +99,8 @@ class GetLottery():
     @staticmethod
     def get(pages):
         return reduce(lambda x, y: x + y,
-                      [GetLottery.parse_page(GetLottery.load_one_page(i + 1))
-                       for i in range(pages)])
+                      iter(GetLottery.parse_page(GetLottery.load_one_page(i + 1))
+                           for i in range(pages)))
 
     @staticmethod
     def load_one_page(page):
@@ -219,7 +219,7 @@ def print_s(reds, blues):
 if __name__ == "__main__":
 
     lotteries = GetLottery.get(99)
-    main_process(1, lotteries)
+    main_process(30, lotteries)
 
     print("main down.")
 
