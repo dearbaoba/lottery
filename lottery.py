@@ -187,14 +187,11 @@ def percent():
 
 
 def main_run(data, tID, lotteries):
-    import time
-
     global min_times
     global max_times
     global min_value
     global max_value
 
-    start_time = time.time()
     for index, i in enumerate(data):
         inc_percent()
         i.cal(lotteries)
@@ -210,10 +207,7 @@ def main_run(data, tID, lotteries):
         if sum(i.times) >= max_times:
             max_times = sum(i.times)
             print((i.get_name_str(), i.times, sum(i.times), "max times"))
-        # if index >= 99:
-        #     break
-    end_time = time.time()
-    print("thread %d done. %f" % (tID, (end_time - start_time)))
+    print("thread %d done. %f" % tID)
 
 
 def main(threads, index, lotteries):
@@ -252,5 +246,7 @@ if __name__ == "__main__":
 
     # print_s([15, 16, 17, 18, 19, 21], [14])
 
+    start_time = time.time()
     while not percent():
         time.sleep(1)
+    print(time.time() - start_time)
