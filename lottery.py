@@ -195,21 +195,23 @@ def main_run(data, tID, lotteries):
         i.cal(lotteries)
         total_num = item[1]
         curr_num += 1
+        per = curr_num * 100 / total_num
         if i.value <= min_value:
             min_value = i.value
-            print((i.get_name_str(), i.times, min_value, " min value"))
+            print((i.get_name_str(), i.times, min_value, "min value ID:%d(%d) in %d/%d" %
+                   (tID, per, curr_num, total_num)))
         if i.value >= max_value:
             max_value = i.value
-            print((i.get_name_str(), i.times, max_value, "max value"))
+            print((i.get_name_str(), i.times, max_value, "max value ID:%d(%d) in %d/%d" %
+                   (tID, per, curr_num, total_num)))
         if sum(i.times) <= min_times:
             min_times = sum(i.times)
-            print((i.get_name_str(), i.times, sum(i.times), "min times"))
+            print((i.get_name_str(), i.times, sum(i.times), "min times ID:%d(%d) in %d/%d" %
+                   (tID, per, curr_num, total_num)))
         if sum(i.times) >= max_times:
             max_times = sum(i.times)
-            print((i.get_name_str(), i.times, sum(i.times), "max times"))
-        if index % 1000 is 0:
-            print("=== process %d is %d/%d(%d) ===" %
-                  (tID, curr_num, total_num, curr_num * 100 / total_num))
+            print((i.get_name_str(), i.times, sum(i.times), "max times ID:%d(%d) in %d/%d" %
+                   (tID, per, curr_num, total_num)))
     end_time = time.time()
     print("process %d done. %f" % (tID, end_time - start_time))
 
