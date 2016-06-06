@@ -142,59 +142,59 @@ class GetLottery():
         return lotteries
 
 
+def cal_total_comb(red_start, red_end):
+    from itertools import combinations, product
+    total = 0
+    num_list = [i + 1 for i in xrange(red_start, red_end, 1)]
+    blues = combinations(BLUE_LIST, BLUE_NUM)
+    for num in num_list:
+        reds = combinations([i for i in xrange(red_start + 1, RED_TOTAL + 1, 1)], RED_NUM - 1)
+        reds_blues = product([num], reds, blues)
+        for item in reds_blues:
+            total += 1
+    return total
+
+
 def generate_data_comb(start):
     from itertools import combinations
     RED_LIST_T = [i for i in xrange(start + 1, RED_TOTAL + 1, 1)]
     return combinations(RED_LIST_T, RED_NUM - 1)
 
 
-def generate_data(threads, index):
+def generate_data(total_process, index):
     from itertools import combinations, product
     import math
 
-    num = math.ceil(float(RED_TOTAL - RED_NUM + 1) / float(threads))
+    num = math.ceil(float(RED_TOTAL - RED_NUM + 1) / float(total_process))
     start = int(index * num)
     end = int(min((index + 1) * num, RED_TOTAL - RED_NUM + 1))
     num_list = [i + 1 for i in xrange(start, end, 1)]
     blues = combinations(BLUE_LIST, BLUE_NUM)
-    print("build thread %d : " % index, num_list, start, end, num)
+    total = cal_total_comb(start, end)
+    print("build process %d with %d comb : " % (index, total), num_list, start, end, num)
     for num in num_list:
         reds = generate_data_comb(num)
         reds_blues = product([num], reds, blues)
         for item in reds_blues:
-            yield LotteryData((item[0], ) + item[1], item[2])
-
-
-def inc_percent():
-    global percent_num
-    lock.acquire()
-    percent_num += 1
-    lock.release()
-
-
-def percent():
-    __per = 100
-    per = int(float(percent_num) / float(MAX_COMB) * __per) + 1
-    if per > __per:
-        per = __per
-    string = ""
-    for i in xrange(per):
-        string += "="
-    for i in xrange(__per - per):
-        string += "-"
-    print("[" + string + " " + str(percent_num) + "/" + str(MAX_COMB) + "]")
-    return percent_num >= MAX_COMB
+            yield LotteryData((item[0], ) + item[1], item[2]), total
 
 
 def main_run(data, tID, lotteries):
-    global min_times
-    global max_times
-    global min_value
-    global max_value
+    import time
+    import sys
 
-    for index, i in enumerate(data):
-        inc_percent()
+    min_times = sys.maxint
+    max_times = 0
+    min_value = sys.maxint
+    max_value = 0
+    curr_num = 0
+
+    start_time = time.time()
+    for index, item in enumerate(data):
+        i = item[0]
         i.cal(lotteries)
+        total_num = item[1]
+        curr_num += 1
         if i.value <= min_value:
             min_value = i.value
             print((i.get_name_str(), i.times, min_value, " min value"))
@@ -207,46 +207,41 @@ def main_run(data, tID, lotteries):
         if sum(i.times) >= max_times:
             max_times = sum(i.times)
             print((i.get_name_str(), i.times, sum(i.times), "max times"))
-    print("thread %d done. %f" % tID)
+        if index % 1000 is 0:
+            print("=== process %d is %d/%d(%d) ===" %
+                  (tID, curr_num, total_num, curr_num * 100 / total_num))
+    end_time = time.time()
+    print("process %d done. %f" % (tID, end_time - start_time))
 
 
-def main(threads, index, lotteries):
-    main_run(generate_data(threads, index), index, lotteries)
+def main(total_process, index, lotteries):
+    main_run(generate_data(total_process, index), index, lotteries)
 
 
-def main_thread(n, lotteries):
-    import threading
+def main_process(n, lotteries):
+    import multiprocessing
+
+    processes = []
     for i in xrange(n):
-        t = threading.Thread(target=main, args=(n, i, lotteries))
-        t.setDaemon(True)
-        t.start()
+        process = multiprocessing.Process(target=main, args=(n, i, lotteries))
+        process.start()
+        processes.append(process)
+    for process in processes:
+        process.join()
 
 
 def print_s(reds, blues):
     lotteries = GetLottery.get(99)
     lotterydata = LotteryData(reds, blues)
     lotterydata.cal(lotteries)
-    print(lotterydata.times)
+    print(lotterydata.get_name_str(), lotterydata.times, lotterydata.value)
 
 if __name__ == "__main__":
-    import sys
-    import time
-    import threading
-    global lock
-    lock = threading.Lock()
-
-    min_times = sys.maxint
-    max_times = 0
-    min_value = sys.maxint
-    max_value = 0
-    percent_num = 0
 
     lotteries = GetLottery.get(99)
-    main_thread(1, lotteries)
+    main_process(28, lotteries)
 
-    # print_s([15, 16, 17, 18, 19, 21], [14])
+    print "main down."
 
-    start_time = time.time()
-    while not percent():
-        time.sleep(1)
-    print(time.time() - start_time)
+    # print_s([15, 23, 24, 28, 31, 33], [4])
+    # print_s([1, 14, 17, 18, 22, 26], [9])
