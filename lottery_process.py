@@ -2,10 +2,10 @@
 
 RED_NUM = 6
 RED_TOTAL = 33
-RED_LIST = [i + 1 for i in xrange(RED_TOTAL)]
+RED_LIST = [i + 1 for i in range(RED_TOTAL)]
 BLUE_NUM = 1
 BLUE_TOTAL = 16
-BLUE_LIST = [i + 1 for i in xrange(BLUE_TOTAL)]
+BLUE_LIST = [i + 1 for i in range(BLUE_TOTAL)]
 METHOD_NUM = 6
 METHODS = [
     [(2, 1), (1, 1), (0, 1)],
@@ -28,12 +28,10 @@ class LotteryCalculate(object):
 
     @staticmethod
     def method_generate(lottery_data, lottery):
-        for i, method in enumerate(METHODS):
-            for item in method:
-                if LotteryCalculate.__method(
-                        item[0], item[1], lottery_data, lottery):
-                    return True, i
-        return False, 0
+        for method in METHODS:
+            yield reduce(lambda x, y: x or y,
+                         [LotteryCalculate.__method(item[0], item[1], lottery_data, lottery)
+                          for item in method])
 
 
 class Lottery(object):
@@ -56,16 +54,20 @@ class LotteryData(Lottery):
 
     def __init__(self, reds, blues):
         super(LotteryData, Lottery.__init__(self, reds, blues))
-        self.times = [0 for i in xrange(METHOD_NUM)]
+        self.times = [0 for i in range(METHOD_NUM)]
         self.value = 0
         # self.lottery = []
 
     def cal_victory(self, lottery):
-        methods, i = LotteryCalculate.method_generate(self, lottery)
-        if methods:
+        def __set_self(i):
             self.times[i] += 1
             self.value += self.__default_value[i]
             # self.lottery.append(lottery)
+
+        methods = LotteryCalculate.method_generate(self, lottery)
+        map(lambda x: __set_self(x[0]),
+            filter(lambda x: x[1],
+                   [(i, method) for i, method in enumerate(methods)]))
 
     def cal(self, lotteries):
         map(self.cal_victory, [item for item in lotteries])
@@ -76,7 +78,7 @@ class FetchHTML(object):
     url = "http://kaijiang.zhcw.com/zhcw/html/ssq/list_%d.html"
 
     def fetch_html(self, pages):
-        for i in xrange(pages):
+        for i in range(pages):
             self.write_one_page(i + 1, self.fetch_one_page(i + 1))
 
     def fetch_one_page(self, page):
@@ -89,7 +91,7 @@ class FetchHTML(object):
         with open(name, "w") as file:
             file.write(text.encode("UTF-8"))
             file.close()
-        print "finished page %d" % page
+        print("finished page %d" % page)
 
 
 class GetLottery():
@@ -98,7 +100,7 @@ class GetLottery():
     def get(pages):
         return reduce(lambda x, y: x + y,
                       [GetLottery.parse_page(GetLottery.load_one_page(i + 1))
-                       for i in xrange(pages)])
+                       for i in range(pages)])
 
     @staticmethod
     def load_one_page(page):
@@ -123,9 +125,9 @@ class GetLottery():
         lotteries = []
         for date in dates:
             red_list = [int(p_num.search(reds.next().group()).group())
-                        for i in xrange(RED_NUM)]
+                        for i in range(RED_NUM)]
             blue_list = [int(p_num.search(blues.next().group()).group())
-                         for i in xrange(BLUE_NUM)]
+                         for i in range(BLUE_NUM)]
             lottery = Lottery(red_list, blue_list)
             lottery.set_date(p_date_str.search(date.group()).group())
             lotteries.append(lottery)
@@ -163,14 +165,15 @@ def main_run(data, tID, lotteries):
     min_value = sys.maxint
     max_value = 0
     curr_num = 0
+    total_num = data[1]
 
     start_time = time.time()
-    total_num = data[1]
     for index, item in enumerate(data[0]):
-        i = LotteryData(item[0], item[1])
-        i.cal(lotteries)
         curr_num += 1
         per = curr_num * 100 / total_num
+
+        i = LotteryData(item[0], item[1])
+        i.cal(lotteries)
         if i.value <= min_value:
             min_value = i.value
             print((i.get_name_str(), i.times, min_value, "min value ID:%d(%d) in %d/%d" %
@@ -199,7 +202,7 @@ def main_process(n, lotteries):
     import multiprocessing
 
     processes = []
-    for i in xrange(n):
+    for i in range(n):
         process = multiprocessing.Process(target=main, args=(n, i, lotteries))
         process.start()
         processes.append(process)
@@ -216,9 +219,9 @@ def print_s(reds, blues):
 if __name__ == "__main__":
 
     lotteries = GetLottery.get(99)
-    main_process(60, lotteries)
+    main_process(1, lotteries)
 
-    print "main down."
+    print("main down.")
 
     # print_s([15, 23, 24, 28, 31, 33], [4])
     # print_s([1, 14, 17, 18, 22, 26], [9])
