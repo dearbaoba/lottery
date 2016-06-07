@@ -1,21 +1,21 @@
 # -*- coding: UTF-8 -*-
 
-RED_NUM = 6
-RED_TOTAL = 33
+RED_NUM = 5
+RED_TOTAL = 35
 RED_LIST = [i + 1 for i in range(RED_TOTAL)]
-BLUE_NUM = 1
-BLUE_TOTAL = 16
+BLUE_NUM = 2
+BLUE_TOTAL = 12
 BLUE_LIST = [i + 1 for i in range(BLUE_TOTAL)]
 METHOD_NUM = 6
 METHODS = [
-    [(1, 1), (0, 1), (2, 1)],
-    [(4, 0), (3, 1)],
-    [(4, 1), (5, 0)],
+    [(3, 0), (1, 2), (2, 1), (0, 2)],
+    [(4, 0), (3, 1), (2, 2)],
+    [(4, 1), (3, 2)],
+    [(5, 0), (4, 2)],
     [(5, 1)],
-    [(6, 0)],
-    [(6, 1)]
+    [(5, 2)]
 ]
-PAGES = 99
+PAGES = 30
 
 
 class LotteryCalculate(object):
@@ -51,7 +51,7 @@ class Lottery(object):
 
 
 class LotteryData(Lottery):
-    __default_value = [17, 124, 2255, 109389, 1107568, 17721088]
+    __default_value = [14, 156, 2915, 99193, 1071285, 21425712]
 
     def __init__(self, reds, blues):
         super(LotteryData, Lottery.__init__(self, reds, blues))
@@ -75,7 +75,7 @@ class LotteryData(Lottery):
 
 class FetchHTML(object):
 
-    url = "http://kaijiang.zhcw.com/zhcw/html/ssq/list_%d.html"
+    url = "http://www.lottery.gov.cn/lottery/dlt/History.aspx?p=%d"
 
     def fetch_html(self, pages):
         for i in range(pages):
@@ -87,7 +87,7 @@ class FetchHTML(object):
         return resp.text
 
     def write_one_page(self, page, text):
-        name = "data/page" + str(page) + ".html"
+        name = "data2/page" + str(page) + ".html"
         with open(name, "w") as file:
             file.write(text.encode("UTF-8"))
             file.close()
@@ -104,7 +104,7 @@ class GetLottery():
 
     @staticmethod
     def load_one_page(page):
-        name = "data/page" + str(page) + ".html"
+        name = "data2/page" + str(page) + ".html"
         with open(name, "r") as file:
             text = file.read().decode("UTF-8")
         return text
@@ -113,23 +113,21 @@ class GetLottery():
     def parse_page(text):
         import re
         p_reds = re.compile(
-            r'<em class="rr">.*</em>')
+            r'<FONT class=\'FontRed\'>.*</FONT> +')
         p_blues = re.compile(
-            r'<em>.*</em>')
-        p_date = re.compile(r'<td align="center">\d+-\d+-\d+</td>')
-        p_num = re.compile(r'\d+')
-        p_date_str = re.compile(r'\d+-\d+-\d+')
+            r'<FONT class=\'FontBlue\'>.*</FONT>')
+        p_date = re.compile(r'\d{4}-\d{2}-\d{2}')
+        p_num = re.compile(r'\d{2}')
         reds = p_reds.finditer(text)
         blues = p_blues.finditer(text)
         dates = p_date.finditer(text)
+        groups = zip(list(reds), list(blues), list(dates))
         lotteries = []
-        for date in dates:
-            red_list = [int(p_num.search(reds.next().group()).group())
-                        for i in range(RED_NUM)]
-            blue_list = [int(p_num.search(blues.next().group()).group())
-                         for i in range(BLUE_NUM)]
+        for (red, blue, date) in groups:
+            red_list = [int(i.group()) for i in p_num.finditer(red.group())]
+            blue_list = [int(i.group()) for i in p_num.finditer(blue.group())]
             lottery = Lottery(red_list, blue_list)
-            lottery.set_date(p_date_str.search(date.group()).group())
+            lottery.set_date(date.group())
             lotteries.append(lottery)
         return lotteries
 
@@ -152,7 +150,8 @@ def get_limit_comb(total_split, index):
     num = int(math.ceil(float(total) / float(total_split)))
     start = int(index * num)
     end = int(min((index + 1) * num, total))
-    print("build process %d with %d comb : " % (index, end - start), total, num, start, end)
+    print("build process %d with %d comb : " %
+          (index, end - start), total, num, start, end)
     return lotterydata[start: end], end - start
 
 
@@ -218,11 +217,7 @@ def print_s(reds, blues):
     print(lotterydata.get_name_str(), lotterydata.times, lotterydata.value)
 
 if __name__ == "__main__":
-
     lotteries = GetLottery.get(PAGES)
-    main_process(30, lotteries)
+    main_process(1, lotteries)
 
     print("main down.")
-
-    # print_s([15, 23, 24, 28, 31, 33], [4])
-    # print_s([1, 14, 17, 18, 22, 26], [9])
