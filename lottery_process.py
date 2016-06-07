@@ -22,8 +22,8 @@ class LotteryCalculate(object):
 
     @staticmethod
     def __method(red, blue, lottery_data, lottery):
-        reds = set(lottery_data.reds) & set(lottery.reds)
-        blues = set(lottery_data.blues) & set(lottery.blues)
+        reds = lottery_data.reds & lottery.reds
+        blues = lottery_data.blues & lottery.blues
         return len(reds) is red and len(blues) is blue
 
     @staticmethod
@@ -38,8 +38,8 @@ class LotteryCalculate(object):
 class Lottery(object):
 
     def __init__(self, reds, blues):
-        self.reds = reds
-        self.blues = blues
+        self.reds = set(reds)
+        self.blues = set(blues)
 
     def set_date(self, date):
         self.date = date
