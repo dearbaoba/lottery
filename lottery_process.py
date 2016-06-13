@@ -1,41 +1,27 @@
 # -*- coding: UTF-8 -*-
 
-RED_NUM = 6
-RED_TOTAL = 33
-RED_LIST = [i + 1 for i in range(RED_TOTAL)]
-BLUE_NUM = 1
-BLUE_TOTAL = 16
-BLUE_LIST = [i + 1 for i in range(BLUE_TOTAL)]
-METHOD_NUM = 6
-METHODS = [
-    [(1, 1), (0, 1), (2, 1)],
-    [(4, 0), (3, 1)],
-    [(4, 1), (5, 0)],
-    [(5, 1)],
-    [(6, 0)],
-    [(6, 1)]
-]
-PAGES = 99
 
+class LotteryMethod(object):
+    METHODS = []
 
-class LotteryCalculate(object):
-
-    @staticmethod
-    def __method(red, blue, lottery_data, lottery):
-        reds = lottery_data.reds & lottery.reds
-        blues = lottery_data.blues & lottery.blues
+    def method(self, red, blue, lottery1, lottery2):
+        reds = lottery1.reds & lottery2.reds
+        blues = lottery1.blues & lottery2.blues
         return len(reds) is red and len(blues) is blue
 
-    @staticmethod
-    def method_generate(lottery_data, lottery):
-        for i, method in enumerate(METHODS):
+    def method_generate(self, lottery1, lottery2):
+        for i, method in enumerate(self.METHODS):
             for item in method:
-                if LotteryCalculate.__method(item[0], item[1], lottery_data, lottery):
+                if self.method(item[0], item[1], lottery1, lottery2):
                     return True, i
         return False, 0
 
 
 class Lottery(object):
+    RED_TOTAL = 0
+    BLUE_TOTAL = 0
+    RED_NUM = 0
+    BLUE_NUM = 0
 
     def __init__(self, reds, blues):
         self.reds = set(reds)
@@ -51,21 +37,19 @@ class Lottery(object):
 
 
 class LotteryData(Lottery):
-    __default_value = [17, 124, 2255, 109389, 1107568, 17721088]
+    default_value = []
+    method = None
 
     def __init__(self, reds, blues):
         super(LotteryData, Lottery.__init__(self, reds, blues))
-        self.times = [0 for i in range(METHOD_NUM)]
+        self.times = [0 for i in range(len(self.default_value))]
         self.value = 0
-        # self.lottery = []
 
     def cal_victory(self, lottery):
         def __set_self(i):
             self.times[i] += 1
-            self.value += self.__default_value[i]
-            # self.lottery.append(lottery)
-
-        methods, index = LotteryCalculate.method_generate(self, lottery)
+            self.value += self.default_value[i]
+        methods, index = self.method.method_generate(self, lottery)
         if methods:
             __set_self(index)
 
@@ -74,155 +58,149 @@ class LotteryData(Lottery):
 
 
 class FetchHTML(object):
+    URL = "%d"
+    TARGET = "%d"
+    PAGES = 0
 
-    url = "http://kaijiang.zhcw.com/zhcw/html/ssq/list_%d.html"
-
-    def fetch_html(self, pages):
-        for i in range(pages):
+    def fetch_html(self):
+        for i in range(self.PAGES):
             self.write_one_page(i + 1, self.fetch_one_page(i + 1))
 
     def fetch_one_page(self, page):
         import requests
-        resp = requests.get(self.url % page)
+        resp = requests.get(self.URL % page)
         return resp.text
 
     def write_one_page(self, page, text):
-        name = "data/page" + str(page) + ".html"
-        with open(name, "w") as file:
+        with open(self.TARGET % page, "w") as file:
             file.write(text.encode("UTF-8"))
             file.close()
         print("finished page %d" % page)
 
 
-class GetLottery():
+class LotteryLoader():
+    TARGET = "%d"
+    PAGES = 0
+    RED_NUM = 0
+    BLUE_NUM = 0
 
-    @staticmethod
-    def get(pages):
+    def load(self):
         return reduce(lambda x, y: x + y,
-                      iter(GetLottery.parse_page(GetLottery.load_one_page(i + 1))
-                           for i in range(pages)))
+                      iter(self.parse_page(self.load_one_page(i + 1))
+                           for i in range(self.PAGES)))
 
-    @staticmethod
-    def load_one_page(page):
-        name = "data/page" + str(page) + ".html"
-        with open(name, "r") as file:
+    def load_one_page(self, page):
+        with open(self.TARGET % page, "r") as file:
             text = file.read().decode("UTF-8")
         return text
 
-    @staticmethod
-    def parse_page(text):
-        import re
-        p_reds = re.compile(
-            r'<em class="rr">.*</em>')
-        p_blues = re.compile(
-            r'<em>.*</em>')
-        p_date = re.compile(r'<td align="center">\d+-\d+-\d+</td>')
-        p_num = re.compile(r'\d+')
-        p_date_str = re.compile(r'\d+-\d+-\d+')
-        reds = p_reds.finditer(text)
-        blues = p_blues.finditer(text)
-        dates = p_date.finditer(text)
-        lotteries = []
-        for date in dates:
-            red_list = [int(p_num.search(reds.next().group()).group())
-                        for i in range(RED_NUM)]
-            blue_list = [int(p_num.search(blues.next().group()).group())
-                         for i in range(BLUE_NUM)]
-            lottery = Lottery(red_list, blue_list)
-            lottery.set_date(p_date_str.search(date.group()).group())
-            lotteries.append(lottery)
-        return lotteries
+    def parse_page(self, text):
+        return []
 
 
-def get_all_comb():
-    from itertools import combinations, product
-    reds = combinations(RED_LIST, RED_NUM)
-    blues = combinations(BLUE_LIST, BLUE_NUM)
-    reds_blues = product(reds, blues)
-    lotterydata = []
-    for item in reds_blues:
-        lotterydata.append((item[0], item[1]))
-    return lotterydata, len(lotterydata)
+class LotteryProcess(object):
+    LotteryClass = Lottery
+    LotteryDataClass = LotteryData
+    LotteryMethodClass = LotteryMethod
+    LotteryFetchClass = FetchHTML
+    LotteryLoadClass = LotteryLoader
 
+    def __init__(self):
+        self.method = self.LotteryMethodClass()
+        self.fetcher = self.LotteryMethodClass()
+        self.loader = self.LotteryLoadClass()
 
-def get_limit_comb(total_split, index):
-    import math
+    def get_all_comb(self, red_num, blue_num, red_list, blue_list):
+        from itertools import combinations, product
+        reds = combinations(red_list, red_num)
+        blues = combinations(blue_list, blue_num)
+        reds_blues = product(reds, blues)
+        comb_list = []
+        for item in reds_blues:
+            comb_list.append((item[0], item[1]))
+        return comb_list, len(comb_list)
 
-    lotterydata, total = get_all_comb()
-    num = int(math.ceil(float(total) / float(total_split)))
-    start = int(index * num)
-    end = int(min((index + 1) * num, total))
-    print("build process %d with %d comb : " % (index, end - start), total, num, start, end)
-    return lotterydata[start: end], end - start
+    def get_limit_comb(self, total_split, index, comb, total):
+        import math
+        num = int(math.ceil(float(total) / float(total_split)))
+        start = int(index * num)
+        end = int(min((index + 1) * num, total))
+        print("build process %d with %d comb : " % (index, end - start), total, num, start, end)
+        return comb[start: end], end - start
 
+    def prepare_for(self):
+        def __setup_lottery(reds, blues, date):
+            lottery = self.LotteryClass(reds, blues)
+            lottery.date = date
+            return lottery
+        item_list = self.loader.load()
+        lotteries = [__setup_lottery(i[0], i[1], i[2]) for i in item_list]
+        red_list = [i + 1 for i in range(self.LotteryClass.RED_TOTAL)]
+        blue_list = [i + 1 for i in range(self.LotteryClass.BLUE_TOTAL)]
+        comb, total = self.get_all_comb(self.LotteryClass.RED_NUM,
+                                        self.LotteryClass.BLUE_NUM, red_list, blue_list)
+        return lotteries, comb, total
 
-def main_run(data, tID, lotteries):
-    import time
-    # import sys
+    def main_run(self, data, tID, lotteries):
+        import time
+        import sys
 
-    # min_times = sys.maxint
-    # max_times = 0
-    # min_value = sys.maxint
-    # max_value = 0
-    # curr_num = 0
-    # total_num = data[1]
+        min_times = sys.maxint
+        max_times = 0
+        min_value = sys.maxint
+        max_value = 0
+        curr_num = 0
+        total_num = data[1]
 
-    start_time = time.time()
-    for index, item in enumerate(data[0]):
-        # curr_num += 1
-        # per = curr_num * 100 / total_num
+        start_time = time.time()
+        for index, item in enumerate(data[0]):
+            curr_num += 1
+            per = curr_num * 100 / total_num
 
-        i = LotteryData(item[0], item[1])
-        i.cal(lotteries)
-        # if i.value <= min_value:
-        #     min_value = i.value
-        #     print((i.get_name_str(), i.times, min_value, "min value ID:%d(%d) in %d/%d" %
-        #            (tID, per, curr_num, total_num)))
-        # if i.value >= max_value:
-        #     max_value = i.value
-        #     print((i.get_name_str(), i.times, max_value, "max value ID:%d(%d) in %d/%d" %
-        #            (tID, per, curr_num, total_num)))
-        # if sum(i.times) <= min_times:
-        #     min_times = sum(i.times)
-        #     print((i.get_name_str(), i.times, sum(i.times), "min times ID:%d(%d) in %d/%d" %
-        #            (tID, per, curr_num, total_num)))
-        # if sum(i.times) >= max_times:
-        #     max_times = sum(i.times)
-        #     print((i.get_name_str(), i.times, sum(i.times), "max times ID:%d(%d) in %d/%d" %
-        #            (tID, per, curr_num, total_num)))
-        print((i.get_name_str(), sum(i.times), i.value))
-    end_time = time.time()
-    print("process %d done. %f" % (tID, end_time - start_time))
+            i = self.LotteryDataClass(item[0], item[1])
+            i.method = self.method
+            i.cal(lotteries)
 
+            if i.value <= min_value:
+                min_value = i.value
+                print((i.get_name_str(), i.times, min_value, "min value ID:%d(%d) in %d/%d" %
+                       (tID, per, curr_num, total_num)))
+            if i.value >= max_value:
+                max_value = i.value
+                print((i.get_name_str(), i.times, max_value, "max value ID:%d(%d) in %d/%d" %
+                       (tID, per, curr_num, total_num)))
+            if sum(i.times) <= min_times:
+                min_times = sum(i.times)
+                print((i.get_name_str(), i.times, sum(i.times), "min times ID:%d(%d) in %d/%d" %
+                       (tID, per, curr_num, total_num)))
+            if sum(i.times) >= max_times:
+                max_times = sum(i.times)
+                print((i.get_name_str(), i.times, sum(i.times), "max times ID:%d(%d) in %d/%d" %
+                       (tID, per, curr_num, total_num)))
 
-def main(total_process, index, lotteries):
-    main_run(get_limit_comb(total_process, index), index, lotteries)
+        end_time = time.time()
+        print("process %d done. %f" % (tID, end_time - start_time))
 
+    def main_process(self, total_process, index, lotteries, comb, total):
+        self.main_run(self.get_limit_comb(total_process, index, comb, total), index, lotteries)
 
-def main_process(n, lotteries):
-    import multiprocessing
+    def main(self, n):
+        lotteries, comb, total = self.prepare_for()
+        if n == 1:
+            self.main_process(1, 0, lotteries, comb, total)
+        else:
+            import multiprocessing
+            processes = []
+            for i in range(n):
+                process = multiprocessing.Process(target=self.main_process,
+                                                  args=(n, i, lotteries, comb, total))
+                process.start()
+                processes.append(process)
+            for process in processes:
+                process.join()
 
-    processes = []
-    for i in range(n):
-        process = multiprocessing.Process(target=main, args=(n, i, lotteries))
-        process.start()
-        processes.append(process)
-    for process in processes:
-        process.join()
-
-
-def print_s(reds, blues):
-    lotteries = GetLottery.get(PAGES)
-    lotterydata = LotteryData(reds, blues)
-    lotterydata.cal(lotteries)
-    print(lotterydata.get_name_str(), lotterydata.times, lotterydata.value)
-
-if __name__ == "__main__":
-
-    lotteries = GetLottery.get(PAGES)
-    main_process(30, lotteries)
-
-    print("main down.")
-
-    # print_s([15, 23, 24, 28, 31, 33], [4])
-    # print_s([1, 14, 17, 18, 22, 26], [9])
+    def print_s(self, reds, blues):
+        lotteries = self.loader.load()
+        lotterydata = self.LotteryDataClass(reds, blues)
+        lotterydata.cal(lotteries)
+        print(lotterydata.get_name_str(), lotterydata.times, lotterydata.value)
