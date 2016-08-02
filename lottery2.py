@@ -66,7 +66,7 @@ class LotteryProcess2(LotteryProcess):
 
 if __name__ == "__main__":
     FetchHTML2().fetch_html()
-    main = LotteryProcess2()
-    main.main(1)
+    #main = LotteryProcess2()
+    #main.main(1)
 
-    print("main down.")
+    #print("main down.")
