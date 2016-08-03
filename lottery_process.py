@@ -68,7 +68,7 @@ class FetchHTML(object):
 
     def fetch_one_page(self, page):
         import requests
-        resp = requests.get(self.URL % page, timeout=10)
+        resp = requests.get(self.URL % page, timeout=30)
         return resp.text
 
     def write_one_page(self, page, text):
