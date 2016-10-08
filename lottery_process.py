@@ -200,7 +200,8 @@ class LotteryProcess(object):
                 process.join()
 
     def print_s(self, reds, blues):
-        lotteries = self.loader.load()
+        # lotteries = self.loader.load()
+        lotteries, _, _ = self.prepare_for()
         lotterydata = self.LotteryDataClass(reds, blues)
         lotterydata.method = self.method
         lotterydata.cal(lotteries)
