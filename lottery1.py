@@ -27,12 +27,12 @@ class LotteryData1(LotteryData):
 class FetchHTML1(FetchHTML):
     URL = "http://kaijiang.zhcw.com/zhcw/html/ssq/list_%d.html"
     TARGET = "data/page%d.html"
-    PAGES = 100
+    PAGES = 101
 
 
 class LotteryLoader1(LotteryLoader):
     TARGET = "data/page%d.html"
-    PAGES = 99
+    PAGES = 101
     RED_NUM = 6
     BLUE_NUM = 1
 
