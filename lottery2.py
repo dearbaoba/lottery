@@ -27,12 +27,12 @@ class LotteryData2(LotteryData):
 class FetchHTML2(FetchHTML):
     URL = "http://www.lottery.gov.cn/lottery/dlt/History.aspx?p=%d"
     TARGET = "data2/page%d.html"
-    PAGES = 31
+    PAGES = 30
 
 
 class LotteryLoader2(LotteryLoader):
     TARGET = "data2/page%d.html"
-    PAGES = 31
+    PAGES = 30
     RED_NUM = 5
     BLUE_NUM = 2
 
